@@ -16448,9 +16448,9 @@
     }
   });
 
-  // node_modules/@wry/equality/lib/equality.js
+  // node_modules/apollo-link-error/node_modules/@wry/equality/lib/equality.js
   var require_equality = __commonJS({
-    "node_modules/@wry/equality/lib/equality.js"(exports) {
+    "node_modules/apollo-link-error/node_modules/@wry/equality/lib/equality.js"(exports) {
       "use strict";
       Object.defineProperty(exports, "__esModule", { value: true });
       var _a = Object.prototype;
@@ -18649,6 +18649,108 @@
     }
   });
 
+  // node_modules/apollo-link-retry/node_modules/@wry/equality/lib/equality.js
+  var require_equality2 = __commonJS({
+    "node_modules/apollo-link-retry/node_modules/@wry/equality/lib/equality.js"(exports) {
+      "use strict";
+      Object.defineProperty(exports, "__esModule", { value: true });
+      var _a = Object.prototype;
+      var toString = _a.toString;
+      var hasOwnProperty = _a.hasOwnProperty;
+      var previousComparisons = /* @__PURE__ */ new Map();
+      function equal(a, b) {
+        try {
+          return check(a, b);
+        } finally {
+          previousComparisons.clear();
+        }
+      }
+      function check(a, b) {
+        if (a === b) {
+          return true;
+        }
+        var aTag = toString.call(a);
+        var bTag = toString.call(b);
+        if (aTag !== bTag) {
+          return false;
+        }
+        switch (aTag) {
+          case "[object Array]":
+            if (a.length !== b.length)
+              return false;
+          case "[object Object]": {
+            if (previouslyCompared(a, b))
+              return true;
+            var aKeys = Object.keys(a);
+            var bKeys = Object.keys(b);
+            var keyCount = aKeys.length;
+            if (keyCount !== bKeys.length)
+              return false;
+            for (var k = 0; k < keyCount; ++k) {
+              if (!hasOwnProperty.call(b, aKeys[k])) {
+                return false;
+              }
+            }
+            for (var k = 0; k < keyCount; ++k) {
+              var key = aKeys[k];
+              if (!check(a[key], b[key])) {
+                return false;
+              }
+            }
+            return true;
+          }
+          case "[object Error]":
+            return a.name === b.name && a.message === b.message;
+          case "[object Number]":
+            if (a !== a)
+              return b !== b;
+          case "[object Boolean]":
+          case "[object Date]":
+            return +a === +b;
+          case "[object RegExp]":
+          case "[object String]":
+            return a == "" + b;
+          case "[object Map]":
+          case "[object Set]": {
+            if (a.size !== b.size)
+              return false;
+            if (previouslyCompared(a, b))
+              return true;
+            var aIterator = a.entries();
+            var isMap = aTag === "[object Map]";
+            while (true) {
+              var info = aIterator.next();
+              if (info.done)
+                break;
+              var _a2 = info.value, aKey = _a2[0], aValue = _a2[1];
+              if (!b.has(aKey)) {
+                return false;
+              }
+              if (isMap && !check(aValue, b.get(aKey))) {
+                return false;
+              }
+            }
+            return true;
+          }
+        }
+        return false;
+      }
+      function previouslyCompared(a, b) {
+        var bSet = previousComparisons.get(a);
+        if (bSet) {
+          if (bSet.has(b))
+            return true;
+        } else {
+          previousComparisons.set(a, bSet = /* @__PURE__ */ new Set());
+        }
+        bSet.add(b);
+        return false;
+      }
+      exports.default = equal;
+      exports.equal = equal;
+    }
+  });
+
   // node_modules/apollo-link-retry/node_modules/apollo-utilities/lib/bundle.cjs.js
   var require_bundle_cjs2 = __commonJS({
     "node_modules/apollo-link-retry/node_modules/apollo-utilities/lib/bundle.cjs.js"(exports) {
@@ -18712,7 +18814,7 @@
       var _tsInvariant = require_invariant();
       var _tslib = require_tslib5();
       var _fastJsonStableStringify = _interopRequireDefault(require_fast_json_stable_stringify());
-      var _equality = require_equality();
+      var _equality = require_equality2();
       exports.isEqual = _equality.equal;
       function _interopRequireDefault(obj) {
         return obj && obj.__esModule ? obj : { default: obj };
@@ -44826,49 +44928,52 @@
         }
         return newState;
       };
-      var whenScrollDirectionChange = (handler) => (options, oldState = {}) => {
-        const {
-          stiffScrollTop: scrollTop,
-          scrollHeight,
-          innerHeight
-        } = getDocumentState();
-        const {
-          event: {
-            config,
-            eventTypeId
+      var whenScrollDirectionChange = (handler) => (
+        // $FlowFixMe
+        (options, oldState = {}) => {
+          const {
+            stiffScrollTop: scrollTop,
+            scrollHeight,
+            innerHeight
+          } = getDocumentState();
+          const {
+            event: {
+              config,
+              eventTypeId
+            }
+          } = options;
+          const {
+            scrollOffsetValue,
+            scrollOffsetUnit
+          } = config;
+          const isPX = scrollOffsetUnit === "PX";
+          const scrollHeightBounds = scrollHeight - innerHeight;
+          const percentTop = Number((scrollTop / scrollHeightBounds).toFixed(2));
+          if (oldState && oldState.percentTop === percentTop) {
+            return oldState;
           }
-        } = options;
-        const {
-          scrollOffsetValue,
-          scrollOffsetUnit
-        } = config;
-        const isPX = scrollOffsetUnit === "PX";
-        const scrollHeightBounds = scrollHeight - innerHeight;
-        const percentTop = Number((scrollTop / scrollHeightBounds).toFixed(2));
-        if (oldState && oldState.percentTop === percentTop) {
-          return oldState;
+          const scrollTopPadding = (isPX ? scrollOffsetValue : innerHeight * (scrollOffsetValue || 0) / 100) / scrollHeightBounds;
+          let scrollingDown;
+          let scrollDirectionChanged;
+          let anchorTop = 0;
+          if (oldState) {
+            scrollingDown = percentTop > oldState.percentTop;
+            scrollDirectionChanged = oldState.scrollingDown !== scrollingDown;
+            anchorTop = scrollDirectionChanged ? percentTop : oldState.anchorTop;
+          }
+          const inBounds = eventTypeId === PAGE_SCROLL_DOWN ? percentTop >= anchorTop + scrollTopPadding : percentTop <= anchorTop - scrollTopPadding;
+          const newState = (0, _extends2.default)({}, oldState, {
+            percentTop,
+            inBounds,
+            anchorTop,
+            scrollingDown
+          });
+          if (oldState && inBounds && (scrollDirectionChanged || newState.inBounds !== oldState.inBounds)) {
+            return handler(options, newState) || newState;
+          }
+          return newState;
         }
-        const scrollTopPadding = (isPX ? scrollOffsetValue : innerHeight * (scrollOffsetValue || 0) / 100) / scrollHeightBounds;
-        let scrollingDown;
-        let scrollDirectionChanged;
-        let anchorTop = 0;
-        if (oldState) {
-          scrollingDown = percentTop > oldState.percentTop;
-          scrollDirectionChanged = oldState.scrollingDown !== scrollingDown;
-          anchorTop = scrollDirectionChanged ? percentTop : oldState.anchorTop;
-        }
-        const inBounds = eventTypeId === PAGE_SCROLL_DOWN ? percentTop >= anchorTop + scrollTopPadding : percentTop <= anchorTop - scrollTopPadding;
-        const newState = (0, _extends2.default)({}, oldState, {
-          percentTop,
-          inBounds,
-          anchorTop,
-          scrollingDown
-        });
-        if (oldState && inBounds && (scrollDirectionChanged || newState.inBounds !== oldState.inBounds)) {
-          return handler(options, newState) || newState;
-        }
-        return newState;
-      };
+      );
       var pointIntersects = (point, rect) => point.left > rect.left && point.left < rect.right && point.top > rect.top && point.top < rect.bottom;
       var whenPageLoadFinish = (handler) => (options, oldState) => {
         const newState = {
