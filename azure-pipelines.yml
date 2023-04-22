@@ -1,19 +1,26 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+name: Replace file in S3
 
-trigger:
-- main
+on:
+  push:
+    branches:
+      - main
 
-pool:
-  vmImage: ubuntu-latest
+jobs:
+  replace:
+    runs-on: ubuntu-latest
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+    - name: Install and configure AWS CLI
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y awscli
+        aws configure set aws_access_key_id AKIA3QVN3JRMSTCOID5T
+        aws configure set aws_secret_access_key CPYNG9zWnU3LwAjs8V2f1B2p3TbHZKdAUDchKQss
+       
+
+    - name: Replace file in S3
+      run: |
+        aws s3 cp ./ s3://memberbase.com --force
