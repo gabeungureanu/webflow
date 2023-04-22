@@ -15,8 +15,8 @@ steps:
       sudo apt-get install -y awscli
       aws configure set aws_access_key_id AKIA3QVN3JRMSTCOID5T
       aws configure set aws_secret_access_key CPYNG9zWnU3LwAjs8V2f1B2p3TbHZKdAUDchKQss
-      aws configure set default.region $(region)
-      aws s3 cp <your-local-file-path> s3://memberbase.com/<your-s3-object-key> --region $(region)
+      aws configure set default.region us-east-1
+      aws s3 cp ./ s3://memberbase.com/ --region us-east-1
   env:
     aws_access_key_id: AKIA3QVN3JRMSTCOID5T
     aws_secret_access_key: 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
